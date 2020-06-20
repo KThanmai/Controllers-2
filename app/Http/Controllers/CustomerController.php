@@ -1,49 +1,51 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Customer;
+use App\Mail\welcomeMail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
 {
-    public function index(){
-    	$customers=\App\Customer::all();
+    public function index(Request $request){
+    	$customers=Customer::where('active',$request->query('active',2))->get();
     	return view('customer.index',compact('customers'));
     }
     public function create(){
-    	return view('customer.create');
+    	$customer=new Customer();
+    	return view('customer.create',compact('customer'));
     }
     public function store(){
-    	$data=request()->validate([
-    		'name' => 'required',
-    		'email'=>'required|email'
+ 
+    	$customer=Customer::create($this->validatedData());
+        Mail::to($customer->email)->send(new welcomeMail());
 
-    	]);
-    	\App\Customer::create($data);
-
-    	return redirect('/customers');
+    	return redirect('/customers/'.$customer->id);
     }
-    public function show(\App\Customer $customer){
+    public function show(Customer $customer){
 
     	 return view('customer.show',compact('customer'));
     }
-    public function edit(\App\Customer $customer){
+    public function edit(Customer $customer){
     	return view('customer.edit',compact('customer'));
     }
-    public function update(\App\Customer $customer){
-    		$data=request()->validate([
-    		'name' => 'required',
-    		'email'=>'required|email'
-
-    	]);
-    	$customer->update($data);
+    public function update(Customer $customer){
+    	$customer->update($this->validatedData());
 
     	return redirect('/customers');
 
     }
-    public function destroy(\App\Customer $customer){
+    public function destroy(Customer $customer){
     	$customer->delete();
 
     	return redirect('/customers');
+    }
+    protected function validatedData(){
+    	return request()->validate([
+    		'name' => 'required',
+    		'email' => 'required|email'
+    	]);
+
     }
 }
